@@ -32,39 +32,53 @@ For more details see:
 
 To install the RPI ws281x library:
 
+```bash
     pip3 install rpi_ws281x
+```
 
 To install the Argon hash algorithm
 
+```bash
     sudo apt install python3-argon2
+```
 
 To install the Flask CSRF protection
 
+```bash
     pip3 install Flask-WTF
+```
 
 To be able to run the tests
 
+```bash
     sudo apt install python3-pytest
+```
 
 It is recommended to install this program directly from git, which will allow for install of future updates. Note that updates will replace any custom sequences you have created. To provide support for different usernames I recommend installing into the /opt directory.
 
 On a Raspberry Pi, open a terminal and enter the following commands:
 
+```bash
     cd /opt
     sudo mkdir pixel-server
     sudo chown $USER: pixel-server
     git clone https://github.com/penguintutor/pixel-server.git pixel-server
+```
 
 Then to have it start automatically run the following:
 
+```bash
     sudo cp /opt/pixel-server/pixelserver.service /etc/systemd/system/
     sudo chown root:root /etc/systemd/system/pixelserver.service
     sudo chmod 644 /etc/systemd/system/pixelserver.service
+```
 
 Enable using:
 
+```bash
     sudo systemctl start pixelserver.service
     sudo systemctl enable pixelserver.service
+```
 
 There is also a video providing a step-by-step guide to installing this on a Raspberry Pi. [Installing Pixel Server on Raspberry Pi OS 64-bit](https://youtu.be/D1VsBHWuY_I)
 
@@ -88,39 +102,53 @@ This does not have to be on the same server as pixel-server.
 
 First make sure your system is up-to-date
 
+```bash
     sudo apt update
     sudo apt upgrade
     sudo apt install nginx
+```
 
+```bash
     sudo apt install certbot
     sudo apt install python3-certbot-nginx
+```
 
 add new file in sites-available
 
+```bash
     ln -s to /etc/nginx/sites-enabled
+```
 
 Add the following in a location file (this assumes using /rpi1/ as the route
 for this particular server.
 
+```bash
     location /rpi1/ {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_pass http://<pixelserver_address>/;
     }
+```
 
 Request through certbot your SSL certificate:
 
+```bash
     sudo certbot --nginx -d <public hostname>
+```
 
 This updates /etc/nginx/sites-enabled
 
 Update with
 
+```bash
     sudo nginx -t
     sudo nginx -s reload
+```
 
 Add the following to crontab for root:
 
+```bash
     0 12 * * * /usr/bin/certbot renew --quiet
+```
 
 This checks for updates on a daily basis and if required renew
 
@@ -132,7 +160,9 @@ If automation runs on the local machine then it is recommended that only the loo
 
 There are no users setup as default. Before you can login then you should create your first admin user with the following command:
 
+```bash
     python3 createadmin.py <username> <password> >> users.cfg
+```
 
 The angled brackets should not be included around the username or password. The double greater than symbols will append
 to the users.cfg file, so if the file already exists this will not remove any existing accounts. Ensure you don't end up
@@ -144,35 +174,44 @@ creating the initial admin login, if not then you will continue to get warnings 
 
 If you wish to use this project in a container, you can do so by getting Docker first if you don't have it installed yet:
 
-
+```bash
     curl -fsSL https://get.docker.com -o get-docker.sh
     sudo sh get-docker.sh
     sudo usermod -aG docker $USER
     rm get-docker.sh
     exit # logout and back in for changes to take effect!
+```
 
 First we enable the needed interfaces by doing:
 
+```bash
     sudo raspi-config nonint do_spi 0
     sudo raspi-config nonint do_i2c 0
     ls /dev/i2c* /dev/spidev0.0
+```
 
 The above command should output:
 
+```bash
     /dev/i2c-1  /dev/i2c-20  /dev/i2c-21  /dev/spidev0.0
+```
 
 Next we create a directory and the config files to keep them persistant:
 
+```bash
     sudo mkdir /opt/pixel-server/
     sudo touch /opt/pixel-server/users.cfg 
     sudo sh -c "echo 'network_allow_auth = 0.0.0.0' > /opt/pixel-server/auth.cfg"
     sudo wget https://raw.githubusercontent.com/penguintutor/pixel-server/main/defaults.cfg -O /opt/pixel-server/pixelserver.cfg
+```
 
 The above step only has to be done once, otherwise the content will be overwitten.
 
 To run pixel-server with Docker, use the following command:
 
+```bash
     docker run -d -v /opt/pixel-server/auth.cfg:/opt/pixel-server/auth.cfg -v /opt/pixel-server/pixelserver.cfg:/opt/pixel-server/pixelserver.cfg -v /opt/pixel-server/users.cfg:/opt/pixel-server/users.cfg -v crontab:/etc/crontabs/ --device=/dev/vcio --cap-add=SYS_RAWIO --device=/dev/mem --security-opt=systempaths=unconfined --security-opt=apparmor=unconfined --device=/dev/spidev0.0 --device=/dev/i2c-1 --device=/dev/gpiomem --restart unless-stopped -p 80:80 --name pixel-server macley/pixel-server
+```
 
 The above command will pull the required image in, make the config files persistant even if you delete the container and adds the minimum required devices/permissions inorder to function properly.
 
@@ -180,22 +219,28 @@ If you don't wish to use port 80, you can change: `-p 80:80` into `-p 81:80`.
 
 You won't be able to login yet, you can create a new user by doing:
 
+```bash
     docker exec -it pixel-server sh -c 'python3 createadmin.py <username> <password> >> users.cfg'
     docker restart pixel-server
+```
 
 The pixel-server container is now running with the latest changes and you can always view them on `/opt/pixel-server/`.
 
 If you wish to update the container when a new image is out, you can do it manually by using:
 
+```bash
     docker pull macley/pixel-server
     docker stop pixel-server
     docker rm pixel-server
+```
 
 You can then start the container with the run command.
 
 If you wish to automate using crontab inside of the container. You can by doing:
 
+```bash
     docker exec -it pixel-server crontab -e
+```
 
 Continue reading how to properly use crontab.
 
@@ -203,8 +248,10 @@ Continue reading how to properly use crontab.
 
 You can automate the light sequences being turned on and off by using crontab. For example:
 
+```bash
     0 22 * * * wget -O /dev/null http://127.0.0.1/set?seq=alloff&delay=976&reverse=0&colors=ffffff
     0 16 * * 1-5 wget -O /dev/null http://127.0.0.1/set?seq=chaser&delay=5000&reverse=1&colors=ffffff,ffffff,ffffff,0000ff,ffffff,ffffff,ffffff,00ffff
+```
 
 ## Toggle
 
@@ -223,7 +270,9 @@ For best effect use either a single color in the customlight.cfg file, or the sa
 
 If you would like to have the lights automatically update to the latest cheerlight color then you can add the following line to crontab.
 
+```bash
     */5     *       *       *       *       wget -O /opt/pixel-server/customlight.cfg http://api.thingspeak.com/channels/1417/field/2/last.txt
+```
 
 The ~ assumes that this is installed in your home directory.
 
@@ -291,12 +340,14 @@ Note that to perform any adminstration tasks then must be in either of the above
 
 For a typical authentication file which allows unauthenicated from the localhost and requires login from all other hosts then save the following into a file called auth.cfg
 
+```bash
     # Authentication rules for Pixel Server
     # Following addresses can access without authentication
     network_allow_always = 127.0.0.1
     # Following allowed, but need to authenticate
     # 0.0.0.0 = all addresses
     network_allow_auth = 0.0.0.0
+```
 
 # Updates and changes
 
@@ -314,9 +365,11 @@ Authentication and logging enabled. This is a significant change which brings in
 
 You may need to install additional libraries including the following commands:
 
+```bash
     sudo pip3 install rpi_ws281x
     sudo apt install python3-argon2
     sudo pip3 install Flask-WTF
+```
 
 ## May 2022
 
@@ -334,12 +387,16 @@ As long as you followed the instructions regarding using a custom configuration 
 
 If upgrading from a version prior to September 2022 you may need to add the following pre-requisites if not already installed:
 
+```bash
     sudo apt install python3-argon2
     sudo pip3 install Flask-WTF
+```
 
-Then you will need to create a login using the createadmin.py script explained under the install instructions. 
+Then you will need to create a login using the createadmin.py script explained under the install instructions.
 
+```bash
     python3 createadmin.py <username> <password> >> users.cfg
+```
 
 You may also need to create a new configuration file for auth.cfg
 
@@ -348,6 +405,9 @@ You may also need to create a new configuration file for auth.cfg
 ## Testing
 
 Currently supports limited automated testing based around the authentication. This is achieved using:
+
+```bash
     py.test-3
+```
 
 Manual testing is required for all other functions.
