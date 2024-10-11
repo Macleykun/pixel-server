@@ -2,7 +2,7 @@ FROM python:alpine
 
 ENV VIRTUAL_ENV=/opt/venv
 
-RUN python -m venv $VIRTUAL_ENV
+RUN python -m venv $VIRTUAL_ENV && echo "*/5     *       *       *       *       wget -q -O /opt/pixel-server/customlight.cfg https://api.thingspeak.com/channels/1417/field/2/last.txt" >> /var/spool/cron/crontabs/root
 
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
